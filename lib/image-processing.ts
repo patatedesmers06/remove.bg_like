@@ -55,6 +55,9 @@ export async function removeBackground(imageBuffer: Buffer, bgColor?: string): P
     const outputBuffer = Buffer.alloc(width * height * 4);
     const sourceData = jimpImage.bitmap.data;
 
+    // Threshold to remove low-confidence noise (0-255)
+    const THRESHOLD = 25; 
+
     for (let i = 0; i < width * height; i++) {
         const idx = i * 4;     // RGBA index
         const maskVal = maskData[i]; // Grayscale mask value (0=Background, 255=Foreground)
@@ -64,11 +67,17 @@ export async function removeBackground(imageBuffer: Buffer, bgColor?: string): P
         const srcG = sourceData[idx + 1];
         const srcB = sourceData[idx + 2];
         
+        // Calculate Soft Alpha with Threshold
+        // If maskVal is below threshold, alpha is 0 (Clean cut for noise)
+        // If above, we normalize it to fade in smoothly from 0
+        let alpha = 0;
+        if (maskVal > THRESHOLD) {
+            alpha = (maskVal - THRESHOLD) / (255 - THRESHOLD);
+        }
+
         if (hasBgColor) {
             // SOFT BLENDING on Solid Background
             // Formula: Final = (Source * Alpha) + (Background * (1 - Alpha))
-            // Normalize alpha to 0-1 range for calculation
-            const alpha = maskVal / 255;
             const invAlpha = 1 - alpha;
 
             outputBuffer[idx]     = (srcR * alpha) + (bgR * invAlpha); // R
@@ -77,11 +86,11 @@ export async function removeBackground(imageBuffer: Buffer, bgColor?: string): P
             outputBuffer[idx + 3] = 255; // Fully Opaque result
         } else {
             // TRANSPARENT Background
-            // Use maskVal directly as Alpha for soft edges
             outputBuffer[idx]     = srcR;
             outputBuffer[idx + 1] = srcG;
             outputBuffer[idx + 2] = srcB;
-            outputBuffer[idx + 3] = maskVal; 
+            // Apply calculated alpha to the alpha channel
+            outputBuffer[idx + 3] = alpha * 255; 
         }
     }
 
