@@ -12,13 +12,22 @@ const supabase = createClient(
 
 export default function DashboardPage() {
     const [user, setUser] = useState<any>(null);
+    const [credits, setCredits] = useState<number | null>(null);
 
     useEffect(() => {
-        supabase.auth.getUser().then(({ data: { user } }) => {
+        supabase.auth.getUser().then(async ({ data: { user } }) => {
             if (!user) {
                 window.location.href = '/login';
             } else {
                 setUser(user);
+                // Fetch Credits
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('credits')
+                    .eq('id', user.id)
+                    .single();
+                
+                setCredits(profile?.credits ?? 0);
             }
         });
     }, []);
@@ -37,12 +46,19 @@ export default function DashboardPage() {
                 <Link href="/" className="font-extrabold text-2xl tracking-tight text-slate-900">
                     OpenRemover <span className="text-blue-600 font-medium">Developer</span>
                 </Link>
-                <button 
-                    onClick={handleSignOut} 
-                    className="text-sm font-semibold text-slate-500 hover:text-red-600 hover:bg-red-50 px-4 py-2 rounded-lg transition-all flex items-center gap-2 border border-transparent hover:border-red-100"
-                >
-                    <LogOut className="w-4 h-4" /> Sign Out
-                </button>
+                <div className="flex items-center gap-4">
+                     {/* Credit Badge in Nav */}
+                     <div className="hidden md:flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200">
+                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                        <span className="text-sm font-bold text-slate-700">{credits !== null ? credits : '...'} Credits</span>
+                     </div>
+                    <button 
+                        onClick={handleSignOut} 
+                        className="text-sm font-semibold text-slate-500 hover:text-red-600 hover:bg-red-50 px-4 py-2 rounded-lg transition-all flex items-center gap-2 border border-transparent hover:border-red-100"
+                    >
+                        <LogOut className="w-4 h-4" /> Sign Out
+                    </button>
+                </div>
             </nav>
 
             <main className="max-w-7xl mx-auto px-6 py-12">
@@ -68,7 +84,7 @@ export default function DashboardPage() {
                                 <div>
                                     <h2 className="text-xl font-bold text-slate-900">My Account</h2>
                                     <span className="inline-block bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded-full uppercase tracking-wider mt-1">
-                                        Pro Plan
+                                        Free Plan
                                     </span>
                                 </div>
                             </div>
@@ -87,24 +103,28 @@ export default function DashboardPage() {
                             </div>
                         </div>
 
-                        {/* Usage Stats (Mock) */}
-                        <div className="bg-slate-900 p-8 rounded-2xl shadow-lg text-white relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500 rounded-full blur-[60px] opacity-20 transform translate-x-10 -translate-y-10" />
+                        {/* Usage Stats (Real) */}
+                        <div className="bg-slate-900 p-8 rounded-2xl shadow-lg text-white relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 w-40 h-40 bg-blue-500 rounded-full blur-[80px] opacity-20 transform translate-x-10 -translate-y-10 group-hover:opacity-30 transition-opacity" />
                             
-                            <h3 className="text-sm font-bold text-slate-400 uppercase mb-6 relative z-10">Monthly Usage</h3>
+                            <h3 className="text-sm font-bold text-slate-400 uppercase mb-4 relative z-10 flex justify-between items-center">
+                                Available Credits
+                                <span className="bg-slate-800 text-xs px-2 py-1 rounded text-slate-300">API</span>
+                            </h3>
                             
-                            <div className="space-y-6 relative z-10">
-                                <div>
-                                    <div className="flex justify-between items-end mb-2">
-                                        <span className="text-4xl font-extrabold">246</span>
-                                        <span className="text-sm font-medium text-slate-400 mb-1">/ 1,000 images</span>
-                                    </div>
-                                    <div className="w-full bg-slate-700 h-2 rounded-full overflow-hidden">
-                                        <div className="bg-blue-500 h-full w-[24.6%]" />
-                                    </div>
+                            <div className="relative z-10">
+                                <div className="flex items-baseline gap-2 mb-6">
+                                    <span className="text-6xl font-extrabold tracking-tighter">
+                                        {credits !== null ? credits : '-'}
+                                    </span>
+                                    <span className="text-lg font-medium text-slate-400">remaining</span>
                                 </div>
-                                <p className="text-sm text-slate-400">
-                                    Resets on <span className="font-bold text-white">Feb 1, 2026</span>
+                                
+                                <button className="w-full bg-white text-slate-900 font-bold py-3 rounded-xl hover:bg-blue-50 transition-colors shadow-lg active:scale-95 flex items-center justify-center gap-2">
+                                    ⚡ Buy More Credits
+                                </button>
+                                <p className="text-xs text-center mt-3 text-slate-500">
+                                    1 Credit = 1 Image Removal
                                 </p>
                             </div>
                         </div>

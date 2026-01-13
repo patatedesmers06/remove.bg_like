@@ -49,6 +49,27 @@ export async function POST(req: NextRequest) {
              userId = user.id;
         }
 
+        // 1.5 CREDIT CHECK (NEW)
+        if (userId) {
+            const { data: profile, error: profileError } = await supabaseAdmin
+                .from('profiles')
+                .select('credits')
+                .eq('id', userId)
+                .single();
+            
+            if (profileError || !profile) {
+                // Return 500 if profile missing (should be created by trigger)
+                // Or 400? Let's assume 500 effectively.
+                console.error('Profile fetch error:', profileError);
+                // Fail safe: Allow if error? No, safer to block.
+                return NextResponse.json({ error: 'User profile not found. Please re-login.' }, { status: 403 });
+            }
+
+            if (profile.credits < 1) {
+                return NextResponse.json({ error: 'Insufficient credits. Please upgrade.' }, { status: 402 });
+            }
+        }
+
         // 2. File Upload Handling
         const formData = await req.formData();
         const file = formData.get('image') as File | null;
@@ -75,6 +96,23 @@ export async function POST(req: NextRequest) {
 
         // Process with AI
         const processedImageBuffer = await removeBackground(buffer, bgColor || undefined);
+
+        // 4. DEDUCT CREDIT (NEW)
+        if (userId) {
+            const { error: deductionError } = await supabaseAdmin.rpc('decrement_credits', { user_id: userId });
+            
+            // Fallback if RPC doesn't exist (though RPC is safer for concurrency)
+            if (deductionError) {
+                // Try manual update (less concurrency safe but works for MVP)
+                // We need to fetch again to be sure? Or just decrement.
+                const { error: updateError } = await supabaseAdmin
+                    .from('profiles')
+                    .update({ credits: ((await supabaseAdmin.from('profiles').select('credits').eq('id', userId).single()).data?.credits || 1) - 1 })
+                    .eq('id', userId);
+                    
+                if (updateError) console.error('Failed to deduct credit', updateError);
+            }
+        }
 
         // Usage count updated above if API key is used.
         // If Bearer token used, we don't track usage against an API key (or we could track against user profile if needed).
