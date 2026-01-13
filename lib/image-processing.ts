@@ -64,27 +64,24 @@ export async function removeBackground(imageBuffer: Buffer, bgColor?: string): P
         const srcG = sourceData[idx + 1];
         const srcB = sourceData[idx + 2];
         
-        // Apply Mask to Alpha
-        if (maskVal < 128) { // Background
-            if (hasBgColor) {
-               // Fill with Background Color + Opaque
-               outputBuffer[idx] = bgR;
-               outputBuffer[idx + 1] = bgG;
-               outputBuffer[idx + 2] = bgB;
-               outputBuffer[idx + 3] = 255;
-            } else {
-               // Transparent
-               outputBuffer[idx] = srcR; // Keep src color (invisible anyway) or 0
-               outputBuffer[idx + 1] = srcG;
-               outputBuffer[idx + 2] = srcB;
-               outputBuffer[idx + 3] = 0; 
-            }
-        } else { // Foreground
-            // Keep source pixel
-            outputBuffer[idx] = srcR;
+        if (hasBgColor) {
+            // SOFT BLENDING on Solid Background
+            // Formula: Final = (Source * Alpha) + (Background * (1 - Alpha))
+            // Normalize alpha to 0-1 range for calculation
+            const alpha = maskVal / 255;
+            const invAlpha = 1 - alpha;
+
+            outputBuffer[idx]     = (srcR * alpha) + (bgR * invAlpha); // R
+            outputBuffer[idx + 1] = (srcG * alpha) + (bgG * invAlpha); // G
+            outputBuffer[idx + 2] = (srcB * alpha) + (bgB * invAlpha); // B
+            outputBuffer[idx + 3] = 255; // Fully Opaque result
+        } else {
+            // TRANSPARENT Background
+            // Use maskVal directly as Alpha for soft edges
+            outputBuffer[idx]     = srcR;
             outputBuffer[idx + 1] = srcG;
             outputBuffer[idx + 2] = srcB;
-            outputBuffer[idx + 3] = 255; 
+            outputBuffer[idx + 3] = maskVal; 
         }
     }
 
