@@ -209,7 +209,6 @@ export default function DashboardPage() {
                             </div>
                         </div>
                     )}
-                    </div>
 
                     {/* RIGHT COLUMN: API Keys & Docs (8 cols) */}
                     <div className="lg:col-span-8 space-y-10">
