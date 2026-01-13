@@ -52,6 +52,7 @@ export async function POST(req: NextRequest) {
         // 2. File Upload Handling
         const formData = await req.formData();
         const file = formData.get('image') as File | null;
+        const bgColor = formData.get('bg_color') as string | null; // Get optional background color
 
         if (!file) {
             return NextResponse.json({ error: 'No image file provided' }, { status: 400 });
@@ -73,7 +74,7 @@ export async function POST(req: NextRequest) {
         const buffer = Buffer.from(arrayBuffer);
 
         // Process with AI
-        const processedImageBuffer = await removeBackground(buffer);
+        const processedImageBuffer = await removeBackground(buffer, bgColor || undefined);
 
         // Usage count updated above if API key is used.
         // If Bearer token used, we don't track usage against an API key (or we could track against user profile if needed).
