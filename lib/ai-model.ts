@@ -11,7 +11,7 @@ We explicitly set it to /tmp to be safe in serverless.
 */
 // env.cacheDir = '/tmp/.cache'; // Uncomment if needed, but default often works with a read-only FS if it downloads to memory or temp.
 
-const MODEL_ID = 'briaai/RMBG-2.0';  
+const MODEL_ID = 'onnx-community/BiRefNet-ONNX';  
 // NOTE: If 'briaai/RMBG-1.4' is not found in ONNX format, consider using 'Xenova/bria-rmbg-1.4' or 'Xenova/modnet'.
 
 // Global declarations to prevent reloading in development/hot-reload
