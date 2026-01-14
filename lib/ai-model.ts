@@ -51,6 +51,9 @@ class AIModel {
     // We use AutoModel.from_pretrained with the specific revision if needed.
     this.model = await AutoModel.from_pretrained(MODEL_ID, {
         // quantize: true, // Optional: for smaller binary size
+        // BiRefNet-ONNX only has 'model.onnx' (fp32) or 'fp16'.
+        // We must explicitly disable quantized loading to find the file.
+        quantized: false, 
     });
     
     this.processor = await AutoProcessor.from_pretrained(MODEL_ID);
