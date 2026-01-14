@@ -37,6 +37,40 @@ export async function removeBackground(imageBuffer: Buffer, bgColor?: string): P
 
     const maskData = mask.data; // Uint8Array
     
+    // 4.5 ERODE MASK (New: Shrink mask by 1px to remove halos)
+    // We create a new buffer for the eroded mask to avoid reading/writing same buffer
+    const erodedMask = new Uint8Array(maskData.length);
+    const widthRaw = width;
+    const heightRaw = height;
+
+    for (let y = 0; y < heightRaw; y++) {
+        for (let x = 0; x < widthRaw; x++) {
+            const idx = y * widthRaw + x;
+            
+            // Optimization: Only erode pixels that are not fully background
+            // (If it's already 0, it stays 0)
+            if (maskData[idx] > 0) {
+                // Check neighbors (up, down, left, right)
+                // If we are at edge, assume background (0)
+                const val = maskData[idx];
+                
+                const up    = (y > 0) ? maskData[idx - widthRaw] : 0;
+                const down  = (y < heightRaw - 1) ? maskData[idx + widthRaw] : 0;
+                const left  = (x > 0) ? maskData[idx - 1] : 0;
+                const right = (x < widthRaw - 1) ? maskData[idx + 1] : 0;
+
+                // Erosion: The new value is the MINIMUM of the neighbors.
+                // This means if I'm next to a black pixel (0), I become 0.
+                // We keep 'val' in the min calculation to preserve current darkness if neighbors are brighter
+                let minVal = Math.min(val, up, down, left, right);
+                
+                erodedMask[idx] = minVal;
+            } else {
+                erodedMask[idx] = 0;
+            }
+        }
+    }
+    
     // Parse background color if provided
     let bgR = 255, bgG = 255, bgB = 255;
     const hasBgColor = !!bgColor;
@@ -62,7 +96,8 @@ export async function removeBackground(imageBuffer: Buffer, bgColor?: string): P
 
     for (let i = 0; i < width * height; i++) {
         const idx = i * 4;     // RGBA index
-        const maskVal = maskData[i]; // Grayscale mask value (0=Background, 255=Foreground)
+        // Use ERODED mask instead of raw mask
+        const maskVal = erodedMask[i]; 
         
         // Copy RGB from source
         const srcR = sourceData[idx];
