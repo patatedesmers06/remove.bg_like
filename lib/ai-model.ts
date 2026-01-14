@@ -11,9 +11,15 @@ We explicitly set it to /tmp to be safe in serverless.
 */
 // env.cacheDir = '/tmp/.cache'; // Uncomment if needed, but default often works with a read-only FS if it downloads to memory or temp.
 
-const MODEL_ID = 'briaai/RMBG-2.0';  
-// RMBG-2.0 offers 90.14% accuracy with improved BiRefNet architecture
-// If RMBG-2.0 fails due to onnxruntime-web compatibility issues, fallback to 'briaai/RMBG-1.4'
+// Try multiple RMBG-2.0 variants in order of preference
+const MODEL_VARIANTS = [
+    'briaai/RMBG-2.0',           // Official RMBG-2.0 (may have auth issues)
+    'Xenova/RMBG-2.0',           // Xenova conversion (if exists)
+    'onnx-community/RMBG-2.0',   // ONNX community conversion
+    'briaai/RMBG-1.4',           // Guaranteed fallback (works)
+];
+
+let MODEL_ID = MODEL_VARIANTS[0]; // Start with RMBG-2.0
 
 // Global declarations to prevent reloading in development/hot-reload
 declare global {
@@ -40,27 +46,48 @@ class AIModel {
      Singleton initialization pattern.
      In Vercel serverless, globalThis is preserved between warm invocations.
   */
-  private async init() {
-    if (global.__model && global.__processor) {
-      this.model = global.__model;
-      this.processor = global.__processor;
-      return;
+    private async init() {
+        if (global.__model && global.__processor) {
+            this.model = global.__model;
+            this.processor = global.__processor;
+            console.log(`Using cached model: ${MODEL_ID}`);
+            return;
+        }
+
+        // Try loading models in order until one succeeds
+        let lastError: any = null;
+        
+        for (const modelId of MODEL_VARIANTS) {
+            try {
+                console.log(`Attempting to load model: ${modelId}...`);
+                
+                this.model = await AutoModel.from_pretrained(modelId, {
+                    // quantize: true, // Optional: for smaller binary size
+                });
+                
+                this.processor = await AutoProcessor.from_pretrained(modelId);
+                
+                // Success! Save the model ID that worked
+                MODEL_ID = modelId;
+                
+                // Save to global scope
+                global.__model = this.model;
+                global.__processor = this.processor;
+                
+                console.log(`✅ Successfully loaded model: ${modelId}`);
+                return;
+                
+            } catch (error: any) {
+                console.warn(`❌ Failed to load ${modelId}:`, error.message);
+                lastError = error;
+                // Continue to next variant
+            }
+        }
+        
+        // If we get here, all models failed
+        console.error('All model variants failed to load!');
+        throw new Error(`Failed to load any model variant. Last error: ${lastError?.message}`);
     }
-
-    console.log('Loading AI Model...');
-    // Load model and processor 
-    // We use AutoModel.from_pretrained with the specific revision if needed.
-    this.model = await AutoModel.from_pretrained(MODEL_ID, {
-        // quantize: true, // Optional: for smaller binary size
-    });
-    
-    this.processor = await AutoProcessor.from_pretrained(MODEL_ID);
-
-    // Save to global scope
-    global.__model = this.model;
-    global.__processor = this.processor;
-    console.log('AI Model Loaded.');
-  }
 
   public getModel() {
     return this.model;
