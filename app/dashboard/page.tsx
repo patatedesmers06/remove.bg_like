@@ -234,6 +234,11 @@ export default function DashboardPage() {
                                 </pre>
                                 </div>
                             </div>
+                            <div className="mt-4 text-right">
+                                <Link href="/docs" className="text-blue-700 font-bold text-sm hover:text-blue-900 transition-colors underline underline-offset-2">
+                                    📘 Voir la documentation complète →
+                                </Link>
+                            </div>
                         </div>
                     </div>
 

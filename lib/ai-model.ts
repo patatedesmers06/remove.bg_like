@@ -23,14 +23,14 @@ let MODEL_ID = MODEL_VARIANTS[0]; // Start with RMBG-2.0
 
 // Global declarations to prevent reloading in development/hot-reload
 declare global {
-  var __model: any;
-  var __processor: any;
+  var __model: unknown;
+  var __processor: unknown;
 }
 
 class AIModel {
   static instance: AIModel;
-  private model: any;
-  private processor: any;
+  private model: unknown;
+  private processor: unknown;
 
   private constructor() {}
 
@@ -55,7 +55,7 @@ class AIModel {
         }
 
         // Try loading models in order until one succeeds
-        let lastError: any = null;
+        let lastError: Error | null = null;
         
         for (const modelId of MODEL_VARIANTS) {
             try {
@@ -77,9 +77,10 @@ class AIModel {
                 console.log(`✅ Successfully loaded model: ${modelId}`);
                 return;
                 
-            } catch (error: any) {
-                console.warn(`❌ Failed to load ${modelId}:`, error.message);
-                lastError = error;
+            } catch (error: unknown) {
+                const errMsg = error instanceof Error ? error.message : String(error);
+                console.warn(`❌ Failed to load ${modelId}:`, errMsg);
+                lastError = error instanceof Error ? error : new Error(errMsg);
                 // Continue to next variant
             }
         }

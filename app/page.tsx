@@ -249,6 +249,9 @@ export default function Home() {
             <span className="font-extrabold text-2xl tracking-tight text-slate-900">OpenRemover</span>
         </Link>
         <div className="flex items-center gap-4">
+            <Link href="/docs" className="text-sm font-bold text-slate-500 hover:text-blue-600 transition-colors px-3 py-2 rounded-lg hover:bg-blue-50">
+                API Docs
+            </Link>
             {session ? (
                 <>
                     {credits !== null && (
