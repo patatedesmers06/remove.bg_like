@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ReactCompareSlider, ReactCompareSliderImage } from 'react-compare-slider';
-import { Loader2, Upload, Download, ImageIcon, LayoutDashboard, LogIn, ChevronDown } from 'lucide-react';
+import { Loader2, Upload, Download, ImageIcon, LayoutDashboard, LogIn, ChevronDown, RotateCcw, Coins } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
@@ -14,6 +14,8 @@ export default function Home() {
   const [processedUrl, setProcessedUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [credits, setCredits] = useState<number | null>(null);
   
   // New State for Background Color
   const [bgColor, setBgColor] = useState<string>('transparent');
@@ -33,32 +35,98 @@ export default function Home() {
     { name: 'Blue', value: '#0000ff', class: 'bg-blue-600' },
   ];
 
+  // Fetch credits when user is logged in
+  const fetchCredits = useCallback(async (userId: string) => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('credits')
+      .eq('id', userId)
+      .single();
+    if (data) setCredits(data.credits);
+  }, []);
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
+      if (session?.user?.id) fetchCredits(session.user.id);
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      if (session?.user?.id) fetchCredits(session.user.id);
+      else setCredits(null);
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [fetchCredits]);
+
+  // Shared file handler for upload, drop, and paste
+  const handleNewFile = useCallback((f: File) => {
+    if (!f.type.startsWith('image/')) {
+      setError('Please select an image file (PNG, JPG, WebP).');
+      return;
+    }
+    // Revoke old URLs to prevent memory leaks
+    if (originalUrl) URL.revokeObjectURL(originalUrl);
+    if (processedUrl) URL.revokeObjectURL(processedUrl);
+    setFile(f);
+    setOriginalUrl(URL.createObjectURL(f));
+    setProcessedUrl(null);
+    setError(null);
+    setBgColor('transparent');
+  }, [originalUrl, processedUrl]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const f = e.target.files[0];
-      // Revoke old URLs to prevent memory leaks
-      if (originalUrl) URL.revokeObjectURL(originalUrl);
-      if (processedUrl) URL.revokeObjectURL(processedUrl);
-      setFile(f);
-      setOriginalUrl(URL.createObjectURL(f));
-      setProcessedUrl(null); // Reset result
-      setError(null);
-      setBgColor('transparent'); // Reset background
+      handleNewFile(e.target.files[0]);
     }
+  };
+
+  // Drag & Drop handlers
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const f = e.dataTransfer.files?.[0];
+    if (f) handleNewFile(f);
+  };
+
+  // Ctrl+V paste handler
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (const item of Array.from(items)) {
+        if (item.type.startsWith('image/')) {
+          const f = item.getAsFile();
+          if (f) handleNewFile(f);
+          break;
+        }
+      }
+    };
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, [handleNewFile]);
+
+  // Reset handler
+  const handleReset = () => {
+    if (originalUrl) URL.revokeObjectURL(originalUrl);
+    if (processedUrl) URL.revokeObjectURL(processedUrl);
+    setFile(null);
+    setOriginalUrl(null);
+    setProcessedUrl(null);
+    setError(null);
+    setBgColor('transparent');
+    setDownloadFormat('png');
   };
 
   const processImage = async () => {
@@ -91,12 +159,12 @@ export default function Home() {
 
         const blob = await res.blob();
         if (blob.size === 0) throw new Error("Empty response from server");
-
-        // Log blob info
-        console.log("Received Blob:", blob.type, blob.size);
         
         const url = URL.createObjectURL(blob);
         setProcessedUrl(url);
+
+        // Refresh credits after successful processing
+        if (session?.user?.id) fetchCredits(session.user.id);
 
     } catch (err: any) {
         console.error(err);
@@ -181,9 +249,17 @@ export default function Home() {
         </Link>
         <div className="flex items-center gap-4">
             {session ? (
-                <Link href="/dashboard" className="flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-blue-600 transition-colors bg-slate-100 hover:bg-blue-50 px-4 py-2 rounded-lg">
-                    <LayoutDashboard className="w-4 h-4" /> Dashboard
-                </Link>
+                <>
+                    {credits !== null && (
+                        <div className="flex items-center gap-1.5 text-sm font-bold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg" title="Remaining credits">
+                            <Coins className="w-4 h-4 text-amber-500" />
+                            <span className={cn(credits <= 2 ? 'text-red-500' : 'text-slate-700')}>{credits}</span>
+                        </div>
+                    )}
+                    <Link href="/dashboard" className="flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-blue-600 transition-colors bg-slate-100 hover:bg-blue-50 px-4 py-2 rounded-lg">
+                        <LayoutDashboard className="w-4 h-4" /> Dashboard
+                    </Link>
+                </>
             ) : (
                 <Link href="/login" className="flex items-center gap-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 px-5 py-2.5 rounded-lg shadow-lg shadow-blue-500/20 transition-all hover:scale-105">
                     <LogIn className="w-4 h-4" /> Login
@@ -211,14 +287,34 @@ export default function Home() {
         </div>
 
         {/* Tool Container */}
-        <div className="bg-white rounded-3xl shadow-2xl shadow-slate-200/50 border border-slate-200 overflow-hidden flex flex-col md:flex-row min-h-[600px]">
+        <div 
+            className={cn(
+                "bg-white rounded-3xl shadow-2xl shadow-slate-200/50 border-2 overflow-hidden flex flex-col md:flex-row min-h-[600px] transition-all duration-200 relative",
+                isDragging ? "border-blue-400 ring-4 ring-blue-100" : "border-slate-200"
+            )}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+        >
+            {/* Drag overlay */}
+            {isDragging && (
+                <div className="absolute inset-0 z-50 bg-blue-50/90 backdrop-blur-sm flex flex-col items-center justify-center gap-4 pointer-events-none">
+                    <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center animate-bounce">
+                        <Upload className="w-10 h-10 text-blue-600" />
+                    </div>
+                    <p className="text-xl font-bold text-blue-600">Drop your image here!</p>
+                </div>
+            )}
             
             {/* Sidebar / Controls */}
             <div className="w-full md:w-[400px] p-8 md:p-10 border-r border-slate-100 flex flex-col gap-8 bg-slate-50/80 backdrop-blur-sm z-20">
                 
                 <div className="space-y-4">
                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Upload Image</label>
-                    <div className="border-2 border-dashed border-slate-300 rounded-2xl p-8 hover:bg-white hover:border-blue-400 transition-all text-center cursor-pointer relative group bg-white/50">
+                    <div className={cn(
+                        "border-2 border-dashed rounded-2xl p-8 hover:bg-white hover:border-blue-400 transition-all text-center cursor-pointer relative group bg-white/50",
+                        isDragging ? "border-blue-400 bg-blue-50" : "border-slate-300"
+                    )}>
                         <input 
                             type="file" 
                             id="upload" 
@@ -230,7 +326,8 @@ export default function Home() {
                             <div className="p-4 bg-slate-100 rounded-full group-hover:bg-blue-50 transition-colors">
                                 <Upload className="w-8 h-8" />
                             </div>
-                            <span className="font-semibold">Click or Drop Image</span>
+                            <span className="font-semibold">Click, Drop, or Paste (Ctrl+V)</span>
+                            <span className="text-xs text-slate-400">PNG, JPG, WebP — Max 10 MB</span>
                         </div>
                     </div>
                 </div>
@@ -303,6 +400,16 @@ export default function Home() {
                             </div>
                         </div>
                     </div>
+                )}
+
+                {/* Reset button */}
+                {processedUrl && (
+                    <button
+                        onClick={handleReset}
+                        className="flex items-center justify-center gap-2 w-full py-3 rounded-xl font-bold text-sm text-slate-500 bg-white border border-slate-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all"
+                    >
+                        <RotateCcw className="w-4 h-4" /> New Image
+                    </button>
                 )}
             </div>
 
