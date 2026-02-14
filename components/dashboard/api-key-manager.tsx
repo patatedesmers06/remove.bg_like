@@ -1,21 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js'; // Use a browser client
 import { Loader2, Plus, Trash2, Copy, Check, Key } from 'lucide-react';
-// import { Button } from '@/components/ui/button';
-// I need simple UI components. Since I didn't generate full shadcn library, I'll use inline tailwind for speed.
-// But I should try to use the "components/ui" pattern if I want to be "professional".
-// I'll assume they exist or I'll standard HTML/Tailwind.
-// Re-reading: "UI : Tailwind CSS + Shadcn/UI". I haven't fully scaffolded shadcn components yet.
-// I will create a basic `Button` and `Input` and `Card` facade or just use raw Tailwind.
-// I will use raw Tailwind here to avoid dependency on uncreated files, but structuring it nicely.
-
-// Initialize client (in a real app, use a context or helper)
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { supabase } from '@/lib/supabase';
 
 interface ApiKey {
   id: string;

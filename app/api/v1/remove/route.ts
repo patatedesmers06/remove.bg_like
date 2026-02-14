@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { removeBackground } from '@/lib/image-processing';
-import { supabaseAdmin } from '@/lib/supabase';
-import crypto from 'crypto';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export const maxDuration = 60; // Set max duration for Vercel Function (standard pro is 60s, hobby 10s might timeout on cold start)
 
@@ -9,10 +8,11 @@ export async function POST(req: NextRequest) {
     try {
         // 1. API Key Validation
         const apiKey = req.headers.get('x-api-key');
-        let userId = null; // Track user for stats if needed
+        let userId: string | null = null;
 
         if (apiKey) {
             // Hash the key to compare with stored hash
+            const crypto = await import('crypto');
             const keyHash = crypto.createHash('sha256').update(apiKey).digest('hex');
 
             // Check against Supabase
@@ -49,23 +49,18 @@ export async function POST(req: NextRequest) {
              userId = user.id;
         }
 
-        // 1.5 CREDIT CHECK (NEW)
+        // 1.5 ATOMIC CREDIT CHECK + DEDUCTION
+        // Uses a single RPC call to prevent race conditions
         if (userId) {
-            const { data: profile, error: profileError } = await supabaseAdmin
-                .from('profiles')
-                .select('credits')
-                .eq('id', userId)
-                .single();
-            
-            if (profileError || !profile) {
-                // Return 500 if profile missing (should be created by trigger)
-                // Or 400? Let's assume 500 effectively.
-                console.error('Profile fetch error:', profileError);
-                // Fail safe: Allow if error? No, safer to block.
-                return NextResponse.json({ error: 'User profile not found. Please re-login.' }, { status: 403 });
+            const { data: creditUsed, error: creditError } = await supabaseAdmin
+                .rpc('try_use_credit', { p_user_id: userId });
+
+            if (creditError) {
+                console.error('Credit RPC error:', creditError);
+                return NextResponse.json({ error: 'Credit system error. Please try again.' }, { status: 500 });
             }
 
-            if (profile.credits < 1) {
+            if (!creditUsed) {
                 return NextResponse.json({ error: 'Insufficient credits. Please upgrade.' }, { status: 402 });
             }
         }
@@ -73,7 +68,7 @@ export async function POST(req: NextRequest) {
         // 2. File Upload Handling
         const formData = await req.formData();
         const file = formData.get('image') as File | null;
-        const bgColor = formData.get('bg_color') as string | null; // Get optional background color
+        const bgColor = formData.get('bg_color') as string | null;
 
         if (!file) {
             return NextResponse.json({ error: 'No image file provided' }, { status: 400 });
@@ -85,7 +80,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'File too large (max 10MB)' }, { status: 413 });
         }
 
-        // Check mime type check
+        // Check mime type
         if (!file.type.startsWith('image/')) {
             return NextResponse.json({ error: 'Invalid file type' }, { status: 415 });
         }
@@ -94,30 +89,9 @@ export async function POST(req: NextRequest) {
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
-        // Process with AI
         const processedImageBuffer = await removeBackground(buffer, bgColor || undefined);
 
-        // 4. DEDUCT CREDIT (NEW)
-        if (userId) {
-            const { error: deductionError } = await supabaseAdmin.rpc('decrement_credits', { user_id: userId });
-            
-            // Fallback if RPC doesn't exist (though RPC is safer for concurrency)
-            if (deductionError) {
-                // Try manual update (less concurrency safe but works for MVP)
-                // We need to fetch again to be sure? Or just decrement.
-                const { error: updateError } = await supabaseAdmin
-                    .from('profiles')
-                    .update({ credits: ((await supabaseAdmin.from('profiles').select('credits').eq('id', userId).single()).data?.credits || 1) - 1 })
-                    .eq('id', userId);
-                    
-                if (updateError) console.error('Failed to deduct credit', updateError);
-            }
-        }
-
-        // Usage count updated above if API key is used.
-        // If Bearer token used, we don't track usage against an API key (or we could track against user profile if needed).
-
-        // 5. Return Result
+        // 4. Return Result (credit already deducted atomically above)
         return new NextResponse(processedImageBuffer as unknown as BodyInit, {
             headers: {
                 'Content-Type': 'image/png',

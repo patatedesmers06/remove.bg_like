@@ -1,12 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 
+// Public Supabase client — safe to use on client side
+// This is the SINGLE source of truth for the browser client
 export const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
-
-// For server-side privileged operations (checking API keys without user context)
-export const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
 )

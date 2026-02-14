@@ -1,14 +1,9 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
 import ApiKeyManager from '@/components/dashboard/api-key-manager';
 import Link from 'next/link';
 import { LogOut } from 'lucide-react';
-
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { supabase } from '@/lib/supabase';
 
 export default function DashboardPage() {
     const [user, setUser] = useState<any>(null);

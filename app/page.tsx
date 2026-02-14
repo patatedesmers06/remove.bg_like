@@ -1,16 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { useState, useEffect, useRef } from 'react';
 import { ReactCompareSlider, ReactCompareSliderImage } from 'react-compare-slider';
 import { Loader2, Upload, Download, ImageIcon, LayoutDashboard, LogIn } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { supabase } from '@/lib/supabase';
 
 export default function Home() {
   const [session, setSession] = useState<any>(null);
@@ -24,7 +19,7 @@ export default function Home() {
   const [bgColor, setBgColor] = useState<string>('transparent');
 
   const BACKGROUND_OPTIONS = [
-    { name: 'Transparent', value: 'transparent', class: 'bg-[url("https://shorturl.at/fI025")]' },
+    { name: 'Transparent', value: 'transparent', class: 'checkerboard-bg' },
     { name: 'White', value: '#ffffff', class: 'bg-white' },
     { name: 'Black', value: '#000000', class: 'bg-black' },
     { name: 'Green', value: '#00ff00', class: 'bg-green-500' },
@@ -48,6 +43,9 @@ export default function Home() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const f = e.target.files[0];
+      // Revoke old URLs to prevent memory leaks
+      if (originalUrl) URL.revokeObjectURL(originalUrl);
+      if (processedUrl) URL.revokeObjectURL(processedUrl);
       setFile(f);
       setOriginalUrl(URL.createObjectURL(f));
       setProcessedUrl(null); // Reset result
@@ -138,7 +136,10 @@ export default function Home() {
 
         // 3. Download
         canvas.toBlob((blob) => {
-            if (!blob) return;
+            if (!blob) {
+                setError('Failed to generate download. Please try again.');
+                return;
+            }
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -151,7 +152,7 @@ export default function Home() {
 
     } catch (err) {
         console.error("Download failed:", err);
-        alert("Failed to generate download. Please try again.");
+        setError('Failed to generate download. Please try again.');
     }
   };
 
@@ -293,7 +294,7 @@ export default function Home() {
             </div>
 
             {/* Preview Area */}
-            <div className="flex-1 bg-[url('https://shorturl.at/fI025')] bg-repeat relative flex items-center justify-center p-8 md:p-12 bg-slate-100/50">
+            <div className="flex-1 relative flex items-center justify-center p-8 md:p-12 bg-slate-100/50">
                  {/* Checkerboard background pattern (Base Layer) */}
                  <div className="absolute inset-0 opacity-5" 
                       style={{ backgroundImage: `linear-gradient(45deg, #000 25%, transparent 25%), linear-gradient(-45deg, #000 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #000 75%), linear-gradient(-45deg, transparent 75%, #000 75%)`, backgroundSize: '24px 24px' }} 
