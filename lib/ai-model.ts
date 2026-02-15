@@ -13,7 +13,7 @@ We explicitly set it to /tmp to be safe in serverless.
 
 // Try multiple RMBG-2.0 variants in order of preference
 const MODEL_VARIANTS = [
-    'Xenova/isnet-general-use',  // High detail (hairs/cables)
+    'Xenova/modnet',             // Reliable trusted alternative
     'briaai/RMBG-1.4',           // Standard, reliable fallback
 ];
 
