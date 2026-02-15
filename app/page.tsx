@@ -22,6 +22,12 @@ export default function Home() {
   
   // New State for Background Color
   const [bgColor, setBgColor] = useState<string>('transparent');
+  const [customColor, setCustomColor] = useState<string>('#ffffff');
+  
+  // New State for Manual Color Removal (Chroma Key)
+  const [removeColor, setRemoveColor] = useState<string>('#000000');
+  const [useRemoveColor, setUseRemoveColor] = useState<boolean>(false);
+  const [removeTolerance, setRemoveTolerance] = useState<number>(10);
   const [downloadFormat, setDownloadFormat] = useState<'png' | 'jpeg' | 'webp'>('png');
 
   const FORMAT_OPTIONS = [
@@ -147,8 +153,16 @@ export default function Home() {
 
     try {
         const formData = new FormData();
-        formData.append('image', file);
-
+        if (file) formData.append('file', file);
+        if (bgColor !== 'transparent') {
+             formData.append('bg_color', bgColor === 'custom' ? customColor : bgColor);
+        }
+        
+        // Send manual removal params if enabled
+        if (useRemoveColor) {
+            formData.append('remove_color', removeColor);
+            formData.append('remove_tolerance', removeTolerance.toString());
+        }
         const res = await fetch('/api/v1/remove', {
             method: 'POST',
             headers: {
@@ -416,7 +430,8 @@ export default function Home() {
                                 <input 
                                     type="color" 
                                     className="absolute inset-0 w-[150%] h-[150%] -top-1/4 -left-1/4 p-0 opacity-0 cursor-pointer"
-                                    onChange={(e) => setBgColor(e.target.value)}
+                                    onChange={(e) => { setBgColor(e.target.value); setCustomColor(e.target.value); }}
+                                    value={customColor}
                                 />
                             </div>
                         </div>
