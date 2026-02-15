@@ -1,6 +1,7 @@
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
-
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+/**
+ * Minimal className merge utility.
+ * Replaces clsx + tailwind-merge with a simple implementation.
+ */
+export function cn(...inputs: (string | boolean | undefined | null)[]) {
+  return inputs.filter(Boolean).join(' ');
 }
