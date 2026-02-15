@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { ReactCompareSlider, ReactCompareSliderImage } from 'react-compare-slider';
 import { Loader2, Upload, Download, ImageIcon, LayoutDashboard, LogIn, ChevronDown, RotateCcw, Coins, Pipette } from 'lucide-react';
 import Link from 'next/link';
@@ -10,6 +10,7 @@ import type { Session } from '@supabase/supabase-js';
 
 export default function Home() {
   const [session, setSession] = useState<Session | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [originalUrl, setOriginalUrl] = useState<string | null>(null);
   const [processedUrl, setProcessedUrl] = useState<string | null>(null);
@@ -137,6 +138,9 @@ export default function Home() {
     setError(null);
     setBgColor('transparent');
     setDownloadFormat('png');
+    if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+    }
   };
 
   // Handle click on original image to pick color
@@ -414,6 +418,7 @@ export default function Home() {
                         isDragging ? "border-blue-400 bg-blue-50" : "border-slate-300"
                     )}>
                         <input 
+                            ref={fileInputRef}
                             type="file" 
                             id="upload" 
                             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
