@@ -33,6 +33,7 @@ class AIModel {
   private model: any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private processor: any;
+  private loadErrors: string[] = [];
 
   private constructor() {}
 
@@ -82,6 +83,7 @@ class AIModel {
             } catch (error: unknown) {
                 const errMsg = error instanceof Error ? error.message : String(error);
                 console.warn(`❌ Failed to load ${modelId}:`, errMsg);
+                this.loadErrors.push(`${modelId}: ${errMsg}`);
                 lastError = error instanceof Error ? error : new Error(errMsg);
                 // Continue to next variant
             }
@@ -103,6 +105,10 @@ class AIModel {
   public getModelId() {
     return MODEL_ID;
   }
+
+  public getLoadErrors() {
+    return this.loadErrors;
+  }
 }
 
 // Helper function exported for ease of use
@@ -117,5 +123,8 @@ export async function getModel() {
 // DEBUG: Temporary function to check which model is loaded
 export async function getModelInfo() {
     const instance = await AIModel.getInstance();
-    return instance.getModelId();
+    return {
+        id: instance.getModelId(),
+        errors: instance.getLoadErrors()
+    };
 }

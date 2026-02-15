@@ -93,14 +93,15 @@ export async function POST(req: NextRequest) {
         const processedImageBuffer = await removeBackground(buffer, bgColor || undefined);
 
         // DEBUG: Get model info for response header
-        const modelId = await getModelInfo();
+        const modelInfo = await getModelInfo();
 
         // 4. Return Result (credit already deducted atomically above)
         return new NextResponse(processedImageBuffer as unknown as BodyInit, {
             headers: {
                 'Content-Type': 'image/png',
                 'Content-Disposition': 'inline; filename="removed-bg.png"',
-                'X-Model-Used': modelId,  // DEBUG: Temporary - shows which model is loaded
+                'X-Model-Used': modelInfo.id,
+                'X-Model-Errors': JSON.stringify(modelInfo.errors),
             },
         });
 

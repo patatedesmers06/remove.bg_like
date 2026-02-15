@@ -18,6 +18,7 @@ export default function Home() {
   const [isDragging, setIsDragging] = useState(false);
   const [credits, setCredits] = useState<number | null>(null);
   const [modelInfo, setModelInfo] = useState<string | null>(null);
+  const [modelErrors, setModelErrors] = useState<string[]>([]);
   
   // New State for Background Color
   const [bgColor, setBgColor] = useState<string>('transparent');
@@ -142,6 +143,7 @@ export default function Home() {
     setError(null);
     setProcessedUrl(null); // Clear previous result immediately
     setModelInfo(null);
+    setModelErrors([]);
 
     try {
         const formData = new FormData();
@@ -169,6 +171,15 @@ export default function Home() {
         // Capture model info if present
         const modelUsed = res.headers.get('X-Model-Used');
         if (modelUsed) setModelInfo(modelUsed);
+
+        const errorsHeader = res.headers.get('X-Model-Errors');
+        if (errorsHeader) {
+            try {
+                setModelErrors(JSON.parse(errorsHeader));
+            } catch (e) {
+                console.error('Failed to parse model errors', e);
+            }
+        }
 
         // Refresh credits after successful processing
         if (session?.user?.id) fetchCredits(session.user.id);
@@ -483,11 +494,18 @@ export default function Home() {
                             </div>
                             
                             {/* Debug Info */}
-                            {modelInfo && (
-                                <div className="text-center text-xs text-slate-400 font-mono mt-2">
-                                    Model: {modelInfo}
-                                </div>
-                            )}
+                            <div className="mt-2 space-y-1">
+                                {modelInfo && (
+                                    <div className="text-center text-xs text-slate-400 font-mono">
+                                        Model: {modelInfo}
+                                    </div>
+                                )}
+                                {modelErrors.length > 0 && (
+                                    <div className="text-center text-xs text-red-400 font-mono bg-red-50 p-1 rounded">
+                                        Load Errors: {modelErrors.join(', ')}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     ) : (
                         <div className="relative shadow-2xl rounded-2xl bg-white/50 backdrop-blur-xl z-10 p-2 ring-1 ring-white/50">
