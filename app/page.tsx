@@ -373,6 +373,60 @@ export default function Home() {
                             <p className="text-sm font-bold text-slate-700 truncate max-w-[200px]" title={file.name}>{file.name}</p>
                             <span className="text-xs font-mono text-slate-400">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
                         </div>
+
+                        {/* --- Magic Color Remover --- */}
+                        <div className="space-y-3 pt-4 border-t border-slate-200/60 mb-4">
+                            <div className="flex items-center justify-between">
+                                <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
+                                    <div className="p-1 bg-purple-100 rounded text-purple-600">✨</div>
+                                    Magic Color Remover
+                                </label>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input 
+                                        type="checkbox" 
+                                        className="sr-only peer" 
+                                        checked={useRemoveColor}
+                                        onChange={(e) => setUseRemoveColor(e.target.checked)}
+                                    />
+                                    <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
+                                </label>
+                            </div>
+                            
+                            {useRemoveColor && (
+                                <div className="bg-purple-50 p-3 rounded-xl border border-purple-100 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                                    <div className="flex items-center gap-3">
+                                        <div className="relative">
+                                            <input
+                                                type="color"
+                                                value={removeColor}
+                                                onChange={(e) => setRemoveColor(e.target.value)}
+                                                className="w-10 h-10 p-0 rounded-lg cursor-pointer border-2 border-white shadow-sm"
+                                            />
+                                        </div>
+                                        <div className="text-xs text-slate-500 flex-1">
+                                            Pick a color to remove (e.g. green screen).
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="space-y-1">
+                                        <div className="flex justify-between text-xs text-slate-500">
+                                            <span>Tolerance</span>
+                                            <span>{removeTolerance}%</span>
+                                        </div>
+                                        <input
+                                            type="range"
+                                            min="1"
+                                            max="50"
+                                            step="1"
+                                            value={removeTolerance}
+                                            onChange={(e) => setRemoveTolerance(parseInt(e.target.value))}
+                                            className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
                         <button 
                             onClick={processImage}
                             disabled={loading}

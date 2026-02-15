@@ -264,6 +264,18 @@ export default function DocsPage() {
                                                     <td className="py-3 px-4 text-center"><span className="bg-slate-100 text-slate-500 text-xs font-bold px-2 py-0.5 rounded-full">Non</span></td>
                                                     <td className="py-3 px-4 text-slate-600">Couleur de fond hex (<code className="bg-slate-100 px-1 rounded text-xs">#ffffff</code>, <code className="bg-slate-100 px-1 rounded text-xs">#00ff00</code>). Absent = transparent</td>
                                                 </tr>
+                                                <tr>
+                                                    <td className="py-3 px-4 font-mono font-bold text-blue-700">remove_color</td>
+                                                    <td className="py-3 px-4 text-slate-600">String</td>
+                                                    <td className="py-3 px-4 text-center"><span className="bg-slate-100 text-slate-500 text-xs font-bold px-2 py-0.5 rounded-full">Non</span></td>
+                                                    <td className="py-3 px-4 text-slate-600">Couleur à supprimer manuellement (Chroma Key) hex (<code className="bg-slate-100 px-1 rounded text-xs">#00ff00</code>).</td>
+                                                </tr>
+                                                <tr>
+                                                    <td className="py-3 px-4 font-mono font-bold text-blue-700">remove_tolerance</td>
+                                                    <td className="py-3 px-4 text-slate-600">Number</td>
+                                                    <td className="py-3 px-4 text-center"><span className="bg-slate-100 text-slate-500 text-xs font-bold px-2 py-0.5 rounded-full">Non</span></td>
+                                                    <td className="py-3 px-4 text-slate-600">Tolérance de suppression (0-50). Défaut : 10.</td>
+                                                </tr>
                                             </tbody>
                                         </table>
                                     </div>
@@ -370,6 +382,8 @@ export default function DocsPage() {
   -H "x-api-key: sk_your_api_key" \\
   -F "image=@photo.jpg" \\
   -F "bg_color=#ffffff" \\
+  -F "remove_color=#00ff00" \\
+  -F "remove_tolerance=15" \\
   --output result.png`}
                                 />
                             </div>
@@ -384,6 +398,8 @@ export default function DocsPage() {
                                     code={`const formData = new FormData();
 formData.append('image', fileInput.files[0]);
 formData.append('bg_color', '#ffffff'); // optionnel
+formData.append('remove_color', '#00ff00'); // optionnel (chroma key)
+formData.append('remove_tolerance', '15'); // optionnel
 
 const response = await fetch('https://openremover.vercel.app/api/v1/remove', {
   method: 'POST',
@@ -411,8 +427,13 @@ const url = URL.createObjectURL(blob);
 response = requests.post(
     'https://openremover.vercel.app/api/v1/remove',
     headers={'x-api-key': 'sk_your_api_key'},
+    headers={'x-api-key': 'sk_your_api_key'},
     files={'image': open('photo.jpg', 'rb')},
-    data={'bg_color': '#ffffff'}  # optionnel
+    data={
+        'bg_color': '#ffffff',
+        'remove_color': '#00ff00',
+        'remove_tolerance': '15'
+    }
 )
 
 with open('result.png', 'wb') as f:
