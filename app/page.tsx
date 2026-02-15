@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { ReactCompareSlider, ReactCompareSliderImage } from 'react-compare-slider';
-import { Loader2, Upload, Download, ImageIcon, LayoutDashboard, LogIn, ChevronDown, RotateCcw, Coins } from 'lucide-react';
+import { Loader2, Upload, Download, ImageIcon, LayoutDashboard, LogIn, ChevronDown, RotateCcw, Coins, Pipette } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
@@ -28,6 +28,7 @@ export default function Home() {
   const [removeColor, setRemoveColor] = useState<string>('#000000');
   const [useRemoveColor, setUseRemoveColor] = useState<boolean>(false);
   const [removeTolerance, setRemoveTolerance] = useState<number>(10);
+  const [isPickingColor, setIsPickingColor] = useState<boolean>(false); // New state for picker
   const [downloadFormat, setDownloadFormat] = useState<'png' | 'jpeg' | 'webp'>('png');
 
   const FORMAT_OPTIONS = [
@@ -136,6 +137,65 @@ export default function Home() {
     setError(null);
     setBgColor('transparent');
     setDownloadFormat('png');
+  };
+
+  // Handle click on original image to pick color
+  const handleImageClick = async (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isPickingColor || !originalUrl) return;
+
+    // We clicked the overlay DIV. We need to find the underlying image to get dimensions.
+    // Since the overlay covers the image container, we can find the sibling img.
+    const container = e.currentTarget.parentElement?.parentElement;
+    const img = container?.querySelector('img[alt="Preview"]') as HTMLImageElement;
+    
+    if (!img) return;
+
+    const rect = img.getBoundingClientRect();
+    
+    // Calculate click position relative to the image
+    // The click is on the overlay which matches the container size.
+    // The image might be smaller due to object-contain.
+    // But here the overlay is inside the same relative container as the image?
+    // Let's assume the click event client coordinates are what matters.
+    
+    // We need to check if the click is actually within the image bounds displayed
+    if (e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) {
+        return; // Clicked outside the actual image area (in the padding)
+    }
+
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    // Calculate natural coordinates
+    const scaleX = img.naturalWidth / rect.width;
+    const scaleY = img.naturalHeight / rect.height;
+    const naturalX = Math.floor(x * scaleX);
+    const naturalY = Math.floor(y * scaleY);
+
+    try {
+        // Draw to hidden canvas to extract pixel
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        const imageObj = new Image();
+        imageObj.crossOrigin = "anonymous";
+        imageObj.src = originalUrl;
+        await new Promise((resolve) => { imageObj.onload = resolve; });
+        
+        ctx.drawImage(imageObj, 0, 0);
+        const pixel = ctx.getImageData(naturalX, naturalY, 1, 1).data;
+        
+        // Convert RGB to Hex
+        const hex = "#" + [pixel[0], pixel[1], pixel[2]].map(x => x.toString(16).padStart(2, '0')).join('');
+        setRemoveColor(hex);
+        setIsPickingColor(false); // Turn off picker after selection
+
+    } catch (err) {
+        console.error("Failed to pick color", err);
+    }
   };
 
   const processImage = async () => {
@@ -374,6 +434,8 @@ export default function Home() {
                             <span className="text-xs font-mono text-slate-400">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
                         </div>
 
+  // ... existing code ...
+
                         {/* --- Magic Color Remover --- */}
                         <div className="space-y-3 pt-4 border-t border-slate-200/60 mb-4">
                             <div className="flex items-center justify-between">
@@ -395,7 +457,7 @@ export default function Home() {
                             {useRemoveColor && (
                                 <div className="bg-purple-50 p-3 rounded-xl border border-purple-100 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
                                     <div className="flex items-center gap-3">
-                                        <div className="relative">
+                                        <div className="relative group/picker">
                                             <input
                                                 type="color"
                                                 value={removeColor}
@@ -403,8 +465,27 @@ export default function Home() {
                                                 className="w-10 h-10 p-0 rounded-lg cursor-pointer border-2 border-white shadow-sm"
                                             />
                                         </div>
-                                        <div className="text-xs text-slate-500 flex-1">
-                                            Pick a color to remove (e.g. green screen).
+                                        
+                                        {/* Eyedropper Button */}
+                                        <button
+                                            onClick={() => setIsPickingColor(!isPickingColor)}
+                                            className={cn(
+                                                "p-2 rounded-lg border-2 transition-all",
+                                                isPickingColor 
+                                                    ? "bg-purple-600 border-purple-600 text-white shadow-md scale-105" 
+                                                    : "bg-white border-slate-200 text-slate-500 hover:border-purple-300 hover:text-purple-600"
+                                            )}
+                                            title="Pick color from image"
+                                        >
+                                            <Pipette className="w-5 h-5" />
+                                        </button>
+
+                                        <div className="text-xs text-slate-500 flex-1 ml-1 leading-tight">
+                                            {isPickingColor ? (
+                                                <span className="text-purple-700 font-bold animate-pulse">Click on the image to pick a color...</span>
+                                            ) : (
+                                                "Pick a color to remove (e.g. green screen)."
+                                            )}
                                         </div>
                                     </div>
                                     
@@ -577,8 +658,24 @@ export default function Home() {
                             </div>
                         </div>
                     ) : (
-                        <div className="relative shadow-2xl rounded-2xl bg-white/50 backdrop-blur-xl z-10 p-2 ring-1 ring-white/50">
-                             <img src={originalUrl} alt="Preview" className="max-w-full max-h-[600px] object-contain rounded-xl" />
+                        <div className="relative w-full h-full flex items-center justify-center">
+                            <div className="relative shadow-2xl rounded-2xl bg-white/50 backdrop-blur-xl z-20 p-2 ring-1 ring-white/50 inline-block max-w-full max-h-full">
+                                <img src={originalUrl} alt="Preview" className="max-w-full max-h-[600px] object-contain rounded-xl" />
+                            </div>
+
+                             {/* Eyedropper Overlay */}
+                             {isPickingColor && (
+                                <div className="absolute inset-0 z-50 cursor-crosshair group-pick flex items-center justify-center">
+                                    <div className="absolute top-4 bg-black/70 text-white text-xs px-3 py-1 rounded-full pointer-events-none backdrop-blur-sm z-50">
+                                        Click on image to pick color
+                                    </div>
+                                    {/* Overlay capturing clicks mapped to original image */}
+                                    <div 
+                                        className="absolute inset-0 z-40"
+                                        onClick={handleImageClick}
+                                    />
+                                </div>
+                            )}
                         </div>
                     )
                  ) : (
