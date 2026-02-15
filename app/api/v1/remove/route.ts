@@ -69,7 +69,6 @@ export async function POST(req: NextRequest) {
         // 2. File Upload Handling
         const formData = await req.formData();
         const file = formData.get('image') as File | null;
-        const bgColor = formData.get('bg_color') as string | null;
 
         if (!file) {
             return NextResponse.json({ error: 'No image file provided' }, { status: 400 });
@@ -88,9 +87,18 @@ export async function POST(req: NextRequest) {
 
         // 3. Process Image
         const arrayBuffer = await file.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
+        const bgColor = formData.get('bg_color') as string | null;
+        const removeColor = formData.get('remove_color') as string | null;
+        const removeTolerance = formData.get('remove_tolerance') as string | null;
 
-        const processedImageBuffer = await removeBackground(buffer, bgColor || undefined);
+        // 3. Process Image
+        const buffer = Buffer.from(arrayBuffer);
+        const processedImageBuffer = await removeBackground(
+            buffer, 
+            bgColor || undefined,
+            removeColor || undefined,
+            removeTolerance ? parseInt(removeTolerance) : undefined
+        );
 
         // DEBUG: Get model info for response header
         const modelInfo = await getModelInfo();

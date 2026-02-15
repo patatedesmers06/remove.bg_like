@@ -35,7 +35,12 @@ function generateGaussianKernel(size: number, sigma: number): number[][] {
  * @param imageBuffer - The input image buffer.
  * @returns - The processed image buffer (PNG).
  */
-export async function removeBackground(imageBuffer: Buffer, bgColor?: string): Promise<Buffer> {
+export async function removeBackground(
+    imageBuffer: Buffer, 
+    bgColor?: string,
+    removeColor?: string, 
+    removeTolerance: number = 10
+): Promise<Buffer> {
     const { model, processor } = await getModel();
     console.log('Start processing...');
     console.time('Jimp Load');
@@ -309,6 +314,19 @@ export async function removeBackground(imageBuffer: Buffer, bgColor?: string): P
         }
     }
 
+    // Parse remove color for Chroma Key
+    let rcR = 0, rcG = 0, rcB = 0;
+    const hasRemoveColor = !!removeColor;
+    if (hasRemoveColor && removeColor) {
+        const hex = removeColor.replace('#', '');
+        if (hex.length === 6) {
+            rcR = parseInt(hex.substring(0, 2), 16);
+            rcG = parseInt(hex.substring(2, 4), 16);
+            rcB = parseInt(hex.substring(4, 6), 16);
+            console.log(`Chroma Key Enabled: RGB(${rcR}, ${rcG}, ${rcB}) Tolerance: ${removeTolerance}`);
+        }
+    }
+
     // 5. Final Application: Deep Copy with Mask
     const outputBuffer = Buffer.alloc(width * height * 4);
     const sourceData = jimpImage.bitmap.data;
@@ -334,6 +352,34 @@ export async function removeBackground(imageBuffer: Buffer, bgColor?: string): P
         let alpha = 0;
         if (maskVal > THRESHOLD) {
             alpha = (maskVal - THRESHOLD) / (255 - THRESHOLD);
+        }
+
+        // --- CHROMA KEY LOGIC ---
+        // If manual color removal is active, check distance to target color
+        if (hasRemoveColor) {
+            // Calculate Euclidean distance in RGB space
+            const dist = Math.sqrt(
+                Math.pow(srcR - rcR, 2) +
+                Math.pow(srcG - rcG, 2) +
+                Math.pow(srcB - rcB, 2)
+            );
+            
+            // Tolerance is percentage (0-100), convert to RGB distance (0-441)
+            // 441 is max distance (sqrt(255^2 * 3))
+            const maxDist = 441;
+            const thresholdDist = (removeTolerance / 100) * maxDist;
+
+            if (dist < thresholdDist) {
+                // Determine softness of the edge
+                const edgeWidth = 10; // smooth transition zone
+                if (dist < thresholdDist - edgeWidth) {
+                     alpha = 0; // Hard remove
+                } else {
+                     // Soft fade out
+                     const fade = (dist - (thresholdDist - edgeWidth)) / edgeWidth;
+                     alpha = Math.min(alpha, fade);
+                }
+            }
         }
         
         // ALPHA MATTING REFINEMENT: Refine alpha in transition zones
