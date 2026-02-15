@@ -126,11 +126,12 @@ export async function removeBackground(imageBuffer: Buffer, bgColor?: string): P
                 const left  = (x > 0) ? blurredMask[idx - 1] : 0;
                 const right = (x < width - 1) ? blurredMask[idx + 1] : 0;
                 
-                // Adaptive erosion: Only erode if at least 2 neighbors are background
+                // Adaptive erosion: Only erode if at least 3 neighbors are background (was 2)
+                // This protects 1px lines (cables) which might have 2 background neighbors (sides) but are valid.
                 const neighbors = [up, down, left, right];
                 const backgroundCount = neighbors.filter(n => n < 50).length;
                 
-                if (backgroundCount >= 2) {
+                if (backgroundCount >= 3) {
                     // Strong erosion on edge pixels
                     erodedMask[idx] = Math.min(val, up, down, left, right);
                 } else {
@@ -172,8 +173,9 @@ export async function removeBackground(imageBuffer: Buffer, bgColor?: string): P
     const isBackground = new Uint8Array(maskData.length); // 1 = definite background
     
     if (isRMBG14) {
-        console.log("Applying aggressive edge flood-fill for RMBG-1.4...");
-        const FLOOD_THRESHOLD = 160; // Pixels with mask below this are traversable
+        console.log("Applying refined edge flood-fill for RMBG-1.4...");
+        // Lower threshold to be safer: only remove very faint noise connected to border
+        const FLOOD_THRESHOLD = 130;  // lowered from 160 to protect semi-transparent cables
         const floodQueue: number[] = [];
     
     // Seed from all 4 borders
