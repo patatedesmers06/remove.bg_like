@@ -37,6 +37,11 @@ function generateGaussianKernel(size: number, sigma: number): number[][] {
  */
 export async function removeBackground(imageBuffer: Buffer, bgColor?: string): Promise<Buffer> {
     const { model, processor } = await getModel();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const modelId = (model as any).config?.name_or_path || 'unknown'; 
+    const isRMBG14 = modelId.includes('RMBG-1.4');
+
+    console.log(`Processing with model: ${modelId} (Legacy Mode: ${isRMBG14})`);
 
     console.log('Start processing...');
     console.time('Jimp Load');
@@ -160,12 +165,16 @@ export async function removeBackground(imageBuffer: Buffer, bgColor?: string): P
         }
     }
     
-    // Step 4: Edge flood-fill — mark all pixels reachable from borders through
-    // low-mask pixels as definite background. This catches noise that is
-    // connected to the edge but not to the main subject.
-    const FLOOD_THRESHOLD = 160; // Pixels with mask below this are traversable
+    
+    // Step 4: Edge flood-fill — ONLY FOR RMBG-1.4
+    // Other models like ModNet/BiRefNet are usually better at segmentation and 
+    // this aggressive flood-fill might remove thin cables/hairs.
     const isBackground = new Uint8Array(maskData.length); // 1 = definite background
-    const floodQueue: number[] = [];
+    
+    if (isRMBG14) {
+        console.log("Applying aggressive edge flood-fill for RMBG-1.4...");
+        const FLOOD_THRESHOLD = 160; // Pixels with mask below this are traversable
+        const floodQueue: number[] = [];
     
     // Seed from all 4 borders
     for (let x = 0; x < width; x++) {
@@ -219,6 +228,9 @@ export async function removeBackground(imageBuffer: Buffer, bgColor?: string): P
             }
         }
     }
+    } else {
+        console.log("Skipping edge flood-fill for non-RMBG model.");
+    }
     
     // Apply: zero out all background pixels
     const finalMask = new Uint8Array(openedMask);
@@ -232,7 +244,11 @@ export async function removeBackground(imageBuffer: Buffer, bgColor?: string): P
     
     // Step 5: Additional small-region cleanup on remaining foreground
     const totalPixels = width * height;
-    const MIN_REGION_SIZE = Math.max(200, Math.floor(totalPixels * 0.001));
+    // For RMBG, use aggressive 0.1% filter. For others, use much smaller 0.01% or 20px to keep details.
+    const minRegionRatio = isRMBG14 ? 0.001 : 0.0001; 
+    const minPixelCount = isRMBG14 ? 200 : 20;
+
+    const MIN_REGION_SIZE = Math.max(minPixelCount, Math.floor(totalPixels * minRegionRatio));
     const visited = new Uint8Array(maskData.length);
     const regionMap = new Int32Array(maskData.length).fill(-1);
     const regionSizes: number[] = [];
