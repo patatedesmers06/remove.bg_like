@@ -160,8 +160,10 @@ export async function removeBackground(imageBuffer: Buffer, bgColor?: string): P
         }
     }
     
-    // Step 4: Connected-component filter — remove small isolated regions (< 50 pixels)
-    const MIN_REGION_SIZE = 50;
+    // Step 4: Connected-component filter — remove noise regions
+    // Use proportional filtering: remove any region smaller than 0.1% of total pixels
+    const totalPixels = width * height;
+    const MIN_REGION_SIZE = Math.max(200, Math.floor(totalPixels * 0.001));
     const visited = new Uint8Array(maskData.length);
     const regionMap = new Int32Array(maskData.length).fill(-1);
     const regionSizes: number[] = [];
@@ -205,17 +207,26 @@ export async function removeBackground(imageBuffer: Buffer, bgColor?: string): P
         }
     }
     
+    // Find the largest region size
+    const maxRegionSize = regionSizes.length > 0 ? Math.max(...regionSizes) : 0;
+    // Also remove regions that are less than 1% of the largest region
+    const proportionalMin = Math.floor(maxRegionSize * 0.01);
+    const effectiveMin = Math.max(MIN_REGION_SIZE, proportionalMin);
+    
     // Zero out small regions
     const finalMask = new Uint8Array(openedMask);
+    let removedCount = 0;
     for (let i = 0; i < width * height; i++) {
         const rid = regionMap[i];
-        if (rid >= 0 && regionSizes[rid] < MIN_REGION_SIZE) {
+        if (rid >= 0 && regionSizes[rid] < effectiveMin) {
             finalMask[i] = 0;
+            removedCount++;
         }
     }
     
     console.timeEnd('Mask Refinement');
-    console.log(`Region filter: ${regionId} regions found, removed ${regionSizes.filter(s => s < MIN_REGION_SIZE).length} small regions`);
+    console.log(`Region filter: ${regionId} regions, largest=${maxRegionSize}px, threshold=${effectiveMin}px, removed ${regionSizes.filter(s => s < effectiveMin).length} noise regions (${removedCount}px)`);
+
     
     // Parse background color if provided
     let bgR = 255, bgG = 255, bgB = 255;
