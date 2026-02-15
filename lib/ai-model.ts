@@ -13,7 +13,7 @@ We explicitly set it to /tmp to be safe in serverless.
 
 // Try multiple RMBG-2.0 variants in order of preference
 const MODEL_VARIANTS = [
-    'onnx-community/BiRefNet-general-epoch_244', // SOTA BiRefNet (General)
+    'Xenova/isnet-general-use',  // High detail (hairs/cables)
     'briaai/RMBG-1.4',           // Standard, reliable fallback
 ];
 
