@@ -664,7 +664,7 @@ with open('result.png', 'wb') as f:
                                         ['Taille max du fichier', '10 Mo'],
                                         ['Formats acceptés', 'PNG, JPG/JPEG, WebP'],
                                         ['Timeout serveur', '60 secondes'],
-                                        ['Format de sortie', 'PNG (RGBA)'],
+                                        ['Format de sortie', 'PNG (RGBA), JPEG, WebP'],
                                         ['Cold start (1er appel)', '~10-30 secondes'],
                                         ['Appels suivants', '~3-10 secondes'],
                                     ].map(([key, val], i) => (
