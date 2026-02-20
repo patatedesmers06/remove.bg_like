@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { ReactCompareSlider, ReactCompareSliderImage } from 'react-compare-slider';
-import { Loader2, Upload, Download, ImageIcon, LayoutDashboard, LogIn, ChevronDown, RotateCcw, Coins, Pipette } from 'lucide-react';
+import { Loader2, Upload, Download, ImageIcon, User, LogIn, ChevronDown, RotateCcw, Coins, Pipette } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
@@ -363,8 +363,8 @@ export default function Home() {
                             <span className={cn(credits <= 2 ? 'text-red-500' : 'text-slate-700')}>{credits}</span>
                         </div>
                     )}
-                    <Link href="/dashboard" className="flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900 transition-colors border border-slate-200 bg-white hover:bg-slate-50 px-4 py-2 rounded-lg shadow-sm">
-                        <LayoutDashboard className="w-4 h-4" /> Dashboard
+                    <Link href="/profile" className="flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900 transition-colors border border-slate-200 bg-white hover:bg-slate-50 px-4 py-2 rounded-lg shadow-sm">
+                        <User className="w-4 h-4" /> Profile
                     </Link>
                 </>
             ) : (
