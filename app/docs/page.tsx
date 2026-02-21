@@ -124,8 +124,8 @@ export default function DocsPage() {
                     <Link href="/" className="text-sm font-bold text-slate-500 hover:text-slate-900 px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
                         <ArrowLeft className="w-4 h-4" /> Back to App
                     </Link>
-                    <Link href="/dashboard" className="text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 px-5 py-2.5 rounded-lg shadow-lg shadow-blue-500/20 transition-all hover:scale-105">
-                        Dashboard
+                    <Link href="/profile" className="text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 px-5 py-2.5 rounded-lg shadow-lg shadow-blue-500/20 transition-all hover:scale-105">
+                        Profile
                     </Link>
                 </div>
             </nav>
@@ -223,7 +223,7 @@ export default function DocsPage() {
                             <div>
                                 <p className="font-bold text-amber-900 text-sm">Comment obtenir une clé API ?</p>
                                 <p className="text-amber-700 text-sm mt-1">
-                                    Connectez-vous → <Link href="/dashboard" className="underline font-bold hover:text-amber-900">Dashboard</Link> → Créez une clé dans &quot;API Keys&quot; → <strong>Copiez-la immédiatement</strong> (elle ne sera plus visible).
+                                    Connectez-vous → <Link href="/profile" className="underline font-bold hover:text-amber-900">Profile</Link> → Créez une clé dans &quot;API Keys&quot; → <strong>Copiez-la immédiatement</strong> (elle ne sera plus visible).
                                 </p>
                             </div>
                         </div>
@@ -691,7 +691,7 @@ with open('result.png', 'wb') as f:
                             <h2 className="text-3xl font-extrabold mb-3">Prêt à commencer ?</h2>
                             <p className="text-slate-400 text-lg mb-6">Créez votre clé API en quelques secondes et commencez à intégrer.</p>
                             <div className="flex items-center justify-center gap-4">
-                                <Link href="/dashboard" className="bg-white text-slate-900 font-bold px-8 py-3.5 rounded-xl hover:bg-blue-50 transition-colors shadow-lg">
+                                <Link href="/profile" className="bg-white text-slate-900 font-bold px-8 py-3.5 rounded-xl hover:bg-blue-50 transition-colors shadow-lg">
                                     Obtenir une clé API
                                 </Link>
                                 <Link href="/" className="border border-slate-600 text-slate-300 font-bold px-8 py-3.5 rounded-xl hover:bg-slate-800 transition-colors">

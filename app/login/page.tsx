@@ -3,9 +3,12 @@ import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
+import type { Session } from '@supabase/supabase-js';
 
 export default function LoginPage() {
-    const [session, setSession] = useState<any>(null);
+    const [session, setSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -19,7 +22,7 @@ export default function LoginPage() {
         } = supabase.auth.onAuthStateChange((_event, session) => {
             setSession(session);
             if (session) {
-                window.location.href = '/dashboard';
+                window.location.href = '/profile';
             }
         });
 
@@ -36,7 +39,10 @@ export default function LoginPage() {
 
     if (!session) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4 font-sans">
+            <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4 font-sans relative">
+                <Link href="/" className="absolute top-6 left-6 md:top-8 md:left-8 text-sm font-bold text-slate-500 hover:text-slate-900 transition-colors flex items-center gap-2 bg-white px-4 py-2 rounded-lg shadow-sm border border-slate-200 hover:shadow-md">
+                    <ArrowLeft className="w-4 h-4" /> Back to Home
+                </Link>
                 <div className="max-w-md w-full bg-white p-10 rounded-3xl shadow-2xl shadow-slate-200/50 border border-slate-100">
                     <div className="text-center mb-8">
                         <div className="w-12 h-12 bg-slate-900 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg">
