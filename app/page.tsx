@@ -369,7 +369,7 @@ export default function Home() {
                 <div className="space-y-4">
                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Upload Image</label>
                     <div className={cn(
-                        "border-2 border-dashed rounded-2xl p-8 hover:bg-white hover:border-blue-400 transition-all text-center cursor-pointer relative group bg-white/50",
+                        "border-2 border-dashed rounded-2xl p-8 hover:bg-white hover:border-blue-400 hover:scale-[1.02] transition-all text-center cursor-pointer relative group bg-white/50",
                         isDragging ? "border-blue-400 bg-blue-50" : "border-slate-300"
                     )}>
                         <input 

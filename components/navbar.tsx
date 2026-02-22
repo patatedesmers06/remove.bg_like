@@ -2,14 +2,12 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import { User, LogIn, Coins, Home, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 
 export function Navbar() {
-  const pathname = usePathname();
   const [session, setSession] = useState<Session | null>(null);
   const [credits, setCredits] = useState<number | null>(null);
 
@@ -59,17 +57,12 @@ export function Navbar() {
       </Link>
       
       <div className="flex items-center gap-3">
-        {pathname !== '/' && (
-            <Link href="/" className="text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors px-3 py-2 rounded-lg hover:bg-slate-100 flex items-center gap-2">
-                <Home className="w-4 h-4" /> <span className="hidden sm:inline-block">Home</span>
-            </Link>
-        )}
-        
-        {pathname !== '/docs' && (
-            <Link href="/docs" className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors px-3 py-2 rounded-lg hover:bg-slate-100">
-                API Docs
-            </Link>
-        )}
+        <Link href="/" className="text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors px-3 py-2 rounded-lg hover:bg-slate-100 flex items-center gap-2">
+            <Home className="w-4 h-4" /> <span className="hidden sm:inline-block">Home</span>
+        </Link>
+        <Link href="/docs" className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors px-3 py-2 rounded-lg hover:bg-slate-100">
+            API Docs
+        </Link>
 
         {session ? (
           <>
@@ -80,27 +73,21 @@ export function Navbar() {
               </div>
             )}
             
-            {pathname !== '/profile' && (
-                <Link href="/profile" className="flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900 transition-colors border border-slate-200 bg-white hover:bg-slate-50 px-4 py-2 rounded-lg shadow-sm">
+            <Link href="/profile" className="flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900 transition-colors border border-slate-200 bg-white hover:bg-slate-50 px-4 py-2 rounded-lg shadow-sm">
                 <User className="w-4 h-4" /> <span className="hidden sm:inline-block">Profile</span>
-                </Link>
-            )}
+            </Link>
 
-            {pathname === '/profile' && (
-                <button
-                    onClick={handleSignOut}
-                    className="text-sm font-semibold text-slate-500 hover:text-red-600 hover:bg-red-50 px-4 py-2 rounded-lg transition-all flex items-center gap-2 border border-transparent hover:border-red-100"
-                >
-                    <LogOut className="w-4 h-4" /> <span className="hidden sm:inline-block">Sign Out</span>
-                </button>
-            )}
+            <button
+                onClick={handleSignOut}
+                className="text-sm font-semibold text-slate-500 hover:text-red-600 hover:bg-red-50 px-4 py-2 rounded-lg transition-all flex items-center gap-2 border border-transparent hover:border-red-100"
+            >
+                <LogOut className="w-4 h-4" /> <span className="hidden sm:inline-block">Sign Out</span>
+            </button>
           </>
         ) : (
-          pathname !== '/login' && (
-            <Link href="/login" className="flex items-center gap-2 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 px-5 py-2.5 rounded-lg shadow-sm transition-colors">
-                <LogIn className="w-4 h-4" /> <span className="hidden sm:inline-block">Login</span>
-            </Link>
-          )
+          <Link href="/login" className="flex items-center gap-2 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 px-5 py-2.5 rounded-lg shadow-sm transition-colors">
+              <LogIn className="w-4 h-4" /> <span className="hidden sm:inline-block">Login</span>
+          </Link>
         )}
       </div>
     </nav>

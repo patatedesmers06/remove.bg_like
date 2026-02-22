@@ -40,8 +40,11 @@ export default function LoginPage() {
             <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4 font-sans relative">
                 <div className="max-w-md w-full bg-white p-10 rounded-3xl shadow-2xl shadow-slate-200/50 border border-slate-100">
                     <div className="text-center mb-8">
-                        <div className="w-12 h-12 bg-slate-900 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                             <div className="w-6 h-6 bg-white rounded-full opacity-50" />
+                        <div className="flex items-center justify-center gap-3 mb-6">
+                            <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center shadow-lg">
+                                <div className="w-5 h-5 bg-white rounded-full opacity-50" />
+                            </div>
+                            <span className="font-extrabold text-2xl tracking-tight text-slate-900">OpenRemover</span>
                         </div>
                         <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Welcome Back</h1>
                         <p className="text-slate-500 mt-2 text-sm font-medium">Sign in to manage your keys and usage.</p>
